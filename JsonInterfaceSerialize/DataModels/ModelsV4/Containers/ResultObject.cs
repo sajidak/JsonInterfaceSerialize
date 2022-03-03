@@ -1,9 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using JsonInterfaceSerialize.Utilities.Constants;
 
 namespace JsonInterfaceSerialize.DataModels.ModelsV4.Containers
 {
+    public interface IInternalResultObject<T>
+    {
+        IList<IError> Errors { get; set; }
+        bool HaveErrors { get; }
+        string Message { get; set; }
+        int RecordsAffected { get; set; }
+        T Result { get; set; }
+
+        int IngestErrors(IList<IError> errs);
+    }
+
+    public class InternalResultObject<T> : IInternalResultObject<T>
+    {
+        public T Result { get; set; }
+        public int RecordsAffected { get; set; } = Gen.ROW_COUNT_ERROR;
+        public IList<IError> Errors { get; set; } = new List<IError>();
+        public bool HaveErrors { get => Errors.Where(e => e.Type == ErrorTypes.ERROR).Count() > 0; }
+        public string Message { get; set; } = string.Empty;
+
+        public int IngestErrors(IList<IError> errs)
+        {
+            if (errs is null || errs.Count == 0) return 0;
+            (Errors as List<IError>).AddRange(errs);
+            return errs.Where(v => v.Type == ErrorTypes.ERROR).Count();
+        }
+    }
+
     public interface IResultObject<T>
     {
         string CorrelationId { get; set; }
@@ -15,6 +43,8 @@ namespace JsonInterfaceSerialize.DataModels.ModelsV4.Containers
         System.Net.HttpStatusCode StatusCode { get; set; }
         bool Successful { get; set; }
         DateTimeOffset TimestampUtc { get; set; }
+
+        int IngestErrors(IList<IError> errs);
     }
 
     // TODO: Refactor and Cleanup into seperate namespaces and files
@@ -40,10 +70,7 @@ namespace JsonInterfaceSerialize.DataModels.ModelsV4.Containers
 
         public long RequestDurationInMilliseconds { get => (long)(DateTimeOffset.UtcNow - StartTime).TotalMilliseconds; }
 
-        public DateTimeOffset TimestampUtc
-        {
-            get; set;
-        }
+        public DateTimeOffset TimestampUtc { get; set; }
 
         public T Data { get; set; }
         public string Message { get; set; }
@@ -51,6 +78,12 @@ namespace JsonInterfaceSerialize.DataModels.ModelsV4.Containers
         public IList<IError> Errors { get; set; } = new List<IError>();
         public bool HaveErrors { get => Errors.Where(e => e.Type == ErrorTypes.ERROR).Count() > 0; }
 
+        public int IngestErrors(IList<IError> errs)
+        {
+            if (errs is null || errs.Count == 0) return 0;
+            (Errors as List<IError>).AddRange(errs);
+            return errs.Where(v => v.Type == ErrorTypes.ERROR).Count();
+        }
     }
 
     public interface IError
