@@ -1,5 +1,6 @@
 ﻿using JsonInterfaceSerialize.DataModels.ModelsV4;
 using JsonInterfaceSerialize.DataModels.ModelsV4.Containers;
+using JsonInterfaceSerialize.Utilities.Helpers;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -8,70 +9,81 @@ using System.Threading.Tasks;
 
 namespace JsonInterfaceSerialize.DataServices
 {
-    public class IFTestDS_v1
+    public interface IIFTestDS_v1 : IDisposable
+    {
+        Task<IInternalResultObject<IJisCountry>> Country_GetOne_v1_Async(string Name, ILogger _logger);
+    }
+
+    public class IFTestDS_v1 : IIFTestDS_v1
     {
         // TODO: Write proper logs
 
-        public static async Task<IInternalResultObject<IJisCountry>> Country_GetOne_v1(string Name, ILogger log)
+        public IFTestDS_v1() { }
+        public IFTestDS_v1(ILogger logger) : this() { log = logger; }
+
+        private ILogger log { get; set; }
+
+
+        public async Task<IInternalResultObject<IJisCountry>> Country_GetOne_v1_Async(string Name, ILogger _logger = null)
         {
             // BEGIN - SIMULATE AN UNHANDLED EXCEPTION
             // This should never occur is good code.
             // Manage this scenario to ensure low-standard code does not break application unexpectedly.
             if (!string.IsNullOrWhiteSpace(Name) && Name.Equals("throw_exception", StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new Exception("Simulating an unhandled exception");
+                // throw new Exception("Simulating an unhandled exception");
+                string lsVar1 = null; lsVar1 = lsVar1.Trim();  // This generates a more realistic exception, with proper stack trace
             }
             // FINIS - SIMULATE AN UNHANDLED EXCEPTION
+
+            if (log is null && _logger is null) throw new NullReferenceException("No usable logger availaible");
+            if (_logger != null) log = _logger;
 
             IInternalResultObject<IJisCountry> IRO = new InternalResultObject<IJisCountry>
             {
                 Result = null
             };
             IJisCountry loCountry = null;
+
             try
             {
                 log.LogInformation("Get Country with Name = {0}", Name);    // Keep logger inside try-catch block, in case unusable logger is sent
                 // Sample object till a data source is implemented
                 if (Name.Equals("India", StringComparison.InvariantCultureIgnoreCase))
                 {
-
                     loCountry = new JisCountry
-                    {
-                        // https://en.wikipedia.org/wiki/India
+                    {   // https://en.wikipedia.org/wiki/India
                         Name = "India",
                         OfficialName = "Republic of India",
                         Capital = "New Delhi",
                         Area = 3287263,
                         Population = 1352642280,
                         States = new List<IJisState>
-                    { new JisState
-                        {
-                            // https://en.wikipedia.org/wiki/Goa
-                            Name       = "Goa",
-                            Capital    = "Panaji / Panjim",
-                            Area       = 3702,
-                            Population = 1458545,
-                            Districts  = new List<IJisDistrict>
-                            {
-                                new JisDistrict
+                        { new JisState
+                            {   // https://en.wikipedia.org/wiki/Goa
+                                Name       = "Goa",
+                                Capital    = "Panaji / Panjim",
+                                Area       = 3702,
+                                Population = 1458545,
+                                Districts  = new List<IJisDistrict>
                                 {
-                                    // https://en.wikipedia.org/wiki/North_Goa_district
-                                    Name       = "North Goa",
-                                    Capital    = "Panaji",
-                                    Area       = 1736,
-                                    Population = 818008,
-                                },
-                                new JisDistrict
-                                {
-                                    // https://en.wikipedia.org/wiki/South_Goa_district
-                                    Name       = "South Goa",
-                                    Capital    = "Margao",
-                                    Area       = 1966,
-                                    Population = 640537,
+                                    new JisDistrict
+                                    {   // https://en.wikipedia.org/wiki/North_Goa_district
+                                        Name       = "North Goa",
+                                        Capital    = "Panaji",
+                                        Area       = 1736,
+                                        Population = 818008,
+                                    },
+                                    new JisDistrict
+                                    {   // https://en.wikipedia.org/wiki/South_Goa_district
+                                        Name       = "South Goa",
+                                        Capital    = "Margao",
+                                        Area       = 1966,
+                                        Population = 640537,
+                                    },
                                 },
                             },
                         },
-                    },
                     };
                     IRO.Errors.Add(new Error { Type = ErrorTypes.INFO, Message = "Found queried country" });
                 }
@@ -83,11 +95,14 @@ namespace JsonInterfaceSerialize.DataServices
             }
             catch (Exception se)
             {
-                IRO.Errors.Add(new Error { Type = ErrorTypes.ERROR, Message = $"Failed to get Country with Name = {Name}. ErrMesg = {se.Message}" });
-                log.LogError(se, "Failed to get Country with Name = {0}", Name);
+                string lsErrData = ExceptionHelpers.SerializeExceptionTxt(se, $"Failed to get Country with Name = {Name}.");
+                IRO.Errors.Add(new Error { Type = ErrorTypes.ERROR, Message = lsErrData });
+                log.LogError(lsErrData);
             }
             IRO.Result = loCountry;
             return IRO;
         }
+
+        public void Dispose() { }
     }
 }

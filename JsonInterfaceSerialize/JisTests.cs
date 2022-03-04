@@ -18,12 +18,36 @@ using dmc3 = JsonInterfaceSerialize.DataModels.ModelsV3.Containers;
 using dm4 = JsonInterfaceSerialize.DataModels.ModelsV4;
 using dmc4 = JsonInterfaceSerialize.DataModels.ModelsV4.Containers;
 using JsonInterfaceSerialize.Services;
-
+using JsonInterfaceSerialize.Utilities.Helpers;
 
 namespace JsonInterfaceSerialize
 {
     public static class JisTests
     {
+        [FunctionName("Test_EP")]
+        [OpenApiOperation(operationId: "Test_EP", tags: new[] { "Tests - Manual" },
+                                        Summary = "",
+                                        Description = ""
+                                        )]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(object), Description = "The response container, with details of the processing outcome.")]
+        public static async Task<string> Test_EP(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = null)] HttpRequest req,
+            ILogger log)
+        {
+            string lsExceptionData = string.Empty;
+            try
+            {
+                ExceptionHelpers.GenerateErrorDeep();
+            }
+            catch (System.Exception se)
+            {
+                lsExceptionData = ExceptionHelpers.SerializeExceptionTxt(se, "Trail for exception serialization.");
+                log.LogError(lsExceptionData);
+            }
+            return lsExceptionData;
+        }
+
+
         [FunctionName("Test_One")]
         [OpenApiOperation(operationId: "Test_One", tags: new[] { "Tests - Manual" },
                                         Summary = "",

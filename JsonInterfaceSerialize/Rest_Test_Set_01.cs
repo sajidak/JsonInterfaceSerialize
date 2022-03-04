@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using JsonInterfaceSerialize.DataModels.ModelsV4;
 using JsonInterfaceSerialize.DataModels.ModelsV4.Containers;
 using JsonInterfaceSerialize.Services;
+using JsonInterfaceSerialize.Utilities.Helpers;
 
 namespace JsonInterfaceSerialize
 {
@@ -74,7 +75,14 @@ namespace JsonInterfaceSerialize
             ILogger log
             )
         {
-            return null;
+            IResultObject<IList<IJisCountry>> ARO = new ResultObject<IList<IJisCountry>>()
+            {
+                CorrelationId = System.Guid.NewGuid().ToString(),
+                StatusCode = HttpStatusCode.OK,
+                Successful = true,
+                Message = $"CountriesAll [{req.Method.ToUpper()}]"
+            };
+            return ARO;
         }
 
         [FunctionName("CountriesOne")]
@@ -99,114 +107,56 @@ namespace JsonInterfaceSerialize
             {
                 CorrelationId = System.Guid.NewGuid().ToString(),
             };
-            IInternalResultObject<IJisCountry> IRO = null;
+            int liErrCount = 0;
+
             try
             {
-                IRO = await IFTestSVC_v1.Country_GetOne_v1(CountryName, log);
-                ARO.IngestErrors(IRO?.Errors); // Test for null IRO
-
-                ARO.Data = IRO?.Result;
-                ARO.StatusCode = (IRO?.Result is null) ? HttpStatusCode.NoContent : HttpStatusCode.OK;
-                ARO.Message = (IRO?.Result is null) ? HttpStatusCode.NoContent.ToString() : HttpStatusCode.OK.ToString();
-                if (ARO.StatusCode == HttpStatusCode.NoContent) ARO.Message = $"No country found for given name '{CountryName}'";
-
+                using (IIFTestSVC_v1 loCountryService = new IFTestSVC_v1(log))
+                {
+                    IInternalResultObject<IJisCountry> IRO;
+                    IRO = await loCountryService.Country_GetOne_v1_Async(CountryName, log);
+                    liErrCount = ARO.IngestErrors(IRO?.Errors); // Test for null IRO
+                    ARO.Data = IRO?.Result;
+                }
+                ARO.StatusCode = (ARO.Data is null) ? HttpStatusCode.NoContent : HttpStatusCode.OK;
             }
             catch (System.Exception se)
             {
-                log.LogError(se, "Error getting country by name");
                 ARO.StatusCode = HttpStatusCode.InternalServerError;
-                ARO.Message = se.Message;
-                ARO.Errors.Add(new Error { Type = ErrorTypes.ERROR, Message = "Error getting Country by name." });
+                string lsErrData = ExceptionHelpers.SerializeExceptionTxt(se, $"Errored when getting Country with Name from Service.");
+                ARO.Errors.Add(new Error { Type = ErrorTypes.ERROR, Message = lsErrData });
+                log.LogError(lsErrData);
             }
 
             // TODO: Abstract to a helper method - BEGIN
 
+            // Set Response properties
             req.HttpContext.Response.ContentType = "application/json";
 
             // Set container properties
+            ARO.Successful = false;
+            ARO.Message = ARO.StatusCode.ToString();
             switch (ARO.StatusCode)
             {
                 case HttpStatusCode.OK:
                     ARO.Successful = true;
                     break;
                 case HttpStatusCode.NoContent:
-                    ARO.Successful = true;
-                    break;
                 case HttpStatusCode.Unauthorized:
-                    ARO.Successful = false;
-                    break;
-                case HttpStatusCode.InternalServerError:
-                    ARO.Successful = false;
-                    break;
-
-                // Other codes, identify those that can be used to return better meaning
-                case HttpStatusCode.Continue:
-                case HttpStatusCode.SwitchingProtocols:
-                case HttpStatusCode.Processing:
-                case HttpStatusCode.EarlyHints:
-                case HttpStatusCode.Created:
-                case HttpStatusCode.Accepted:
-                case HttpStatusCode.NonAuthoritativeInformation:
-                case HttpStatusCode.ResetContent:
-                case HttpStatusCode.PartialContent:
-                case HttpStatusCode.MultiStatus:
-                case HttpStatusCode.AlreadyReported:
-                case HttpStatusCode.IMUsed:
-                case HttpStatusCode.Ambiguous:
-                case HttpStatusCode.Moved:
-                case HttpStatusCode.Found:
-                case HttpStatusCode.SeeOther:
-                case HttpStatusCode.NotModified:
-                case HttpStatusCode.UseProxy:
-                case HttpStatusCode.Unused:
-                case HttpStatusCode.TemporaryRedirect:
-                case HttpStatusCode.PermanentRedirect:
                 case HttpStatusCode.BadRequest:
-                case HttpStatusCode.PaymentRequired:
-                case HttpStatusCode.Forbidden:
-                case HttpStatusCode.NotFound:
-                case HttpStatusCode.MethodNotAllowed:
-                case HttpStatusCode.NotAcceptable:
-                case HttpStatusCode.ProxyAuthenticationRequired:
-                case HttpStatusCode.RequestTimeout:
-                case HttpStatusCode.Conflict:
-                case HttpStatusCode.Gone:
-                case HttpStatusCode.LengthRequired:
-                case HttpStatusCode.PreconditionFailed:
-                case HttpStatusCode.RequestEntityTooLarge:
-                case HttpStatusCode.RequestUriTooLong:
-                case HttpStatusCode.UnsupportedMediaType:
-                case HttpStatusCode.RequestedRangeNotSatisfiable:
-                case HttpStatusCode.ExpectationFailed:
-                case HttpStatusCode.MisdirectedRequest:
-                case HttpStatusCode.UnprocessableEntity:
-                case HttpStatusCode.Locked:
-                case HttpStatusCode.FailedDependency:
-                case HttpStatusCode.UpgradeRequired:
-                case HttpStatusCode.PreconditionRequired:
-                case HttpStatusCode.TooManyRequests:
-                case HttpStatusCode.RequestHeaderFieldsTooLarge:
-                case HttpStatusCode.UnavailableForLegalReasons:
-                case HttpStatusCode.NotImplemented:
-                case HttpStatusCode.BadGateway:
-                case HttpStatusCode.ServiceUnavailable:
-                case HttpStatusCode.GatewayTimeout:
-                case HttpStatusCode.HttpVersionNotSupported:
-                case HttpStatusCode.VariantAlsoNegotiates:
-                case HttpStatusCode.InsufficientStorage:
-                case HttpStatusCode.LoopDetected:
-                case HttpStatusCode.NotExtended:
-                case HttpStatusCode.NetworkAuthenticationRequired:
+                case HttpStatusCode.InternalServerError:
+                    break;
                 default:
+                    ARO.Message = $"Unknown condition. Inform application owner with details.";
                     break;
             }
+            // TODO: Abstract to a helper method - FINIS
 
             // Root cause of HTTP 500 erors with no information in the container
             if (req.Query.ContainsKey("SyncStatus") && req.Query["SyncStatus"].ToString().ToLower() == "true")
             {
                 req.HttpContext.Response.StatusCode = (int)ARO.StatusCode;
             }
-            // TODO: Abstract to a helper method - FINIS
 
             return ARO;
         }
@@ -221,12 +171,19 @@ namespace JsonInterfaceSerialize
             )]
         [OpenApiRequestBody("application/json", typeof(object))]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IList<IResultObject<IJisCountry>>), Description = "The OK response")]
-        public static async Task<IList<IResultObject<IJisCountry>>> RestTest01_Create(
+        public static async Task<IResultObject<IList<IJisCountry>>> RestTest01_Create(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
             ILogger log
             )
         {
-            return null;
+            IResultObject<IList<IJisCountry>> ARO = new ResultObject<IList<IJisCountry>>()
+            {
+                CorrelationId = System.Guid.NewGuid().ToString(),
+                StatusCode = HttpStatusCode.OK,
+                Successful = true,
+                Message = $"CountriesAdd [{req.Method.ToUpper()}]"
+            };
+            return ARO;
         }
 
         [FunctionName("CountriesUpdate")]
@@ -238,12 +195,19 @@ namespace JsonInterfaceSerialize
             )]
         [OpenApiRequestBody("application/json", typeof(object))]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IList<IResultObject<IJisCountry>>), Description = "The OK response")]
-        public static async Task<IList<IResultObject<IJisCountry>>> RestTest01_Update(
+        public static async Task<IResultObject<IList<IJisCountry>>> RestTest01_Update(
             [HttpTrigger(AuthorizationLevel.Function, "patch", Route = null)] HttpRequest req,
             ILogger log
             )
         {
-            return null;
+            IResultObject<IList<IJisCountry>> ARO = new ResultObject<IList<IJisCountry>>()
+            {
+                CorrelationId = System.Guid.NewGuid().ToString(),
+                StatusCode = HttpStatusCode.OK,
+                Successful = true,
+                Message = $"CountriesUpdate [{req.Method.ToUpper()}]"
+            };
+            return ARO;
         }
 
         [FunctionName("CountriesDelete")]
@@ -255,12 +219,19 @@ namespace JsonInterfaceSerialize
             )]
         [OpenApiParameter("CountryName", Type = typeof(string), In = ParameterLocation.Query, Required = true, Summary = "Name of the country to get details of.")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IList<IResultObject<IJisCountry>>), Description = "The OK response")]
-        public static async Task<IList<IResultObject<IJisCountry>>> RestTest01_Delete(
+        public static async Task<IResultObject<IList<IJisCountry>>> RestTest01_Delete(
             [HttpTrigger(AuthorizationLevel.Function, "delete", Route = null)] HttpRequest req,
             ILogger log
             )
         {
-            return null;
+            IResultObject<IList<IJisCountry>> ARO = new ResultObject<IList<IJisCountry>>()
+            {
+                CorrelationId = System.Guid.NewGuid().ToString(),
+                StatusCode = HttpStatusCode.OK,
+                Successful = true,
+                Message = $"CountriesDelete [{req.Method.ToUpper()}]"
+            };
+            return ARO;
         }
 
 
