@@ -1,10 +1,11 @@
-﻿using JsonInterfaceSerialize.DataModels.ModelsV4;
-using JsonInterfaceSerialize.DataModels.ModelsV4.Containers;
+﻿using JsonInterfaceSerialize.DataModels.Containers;
+using JsonInterfaceSerialize.DataModels.CountryDM;
+using JsonInterfaceSerialize.DataModels.DataInterfaces;
+using JsonInterfaceSerialize.Utilities.Enums;
 using JsonInterfaceSerialize.Utilities.Helpers;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace JsonInterfaceSerialize.DataServices
@@ -19,9 +20,9 @@ namespace JsonInterfaceSerialize.DataServices
         // TODO: Write proper logs
 
         public IFTestDS_v1() { }
-        public IFTestDS_v1(ILogger logger) : this() { log = logger; }
+        public IFTestDS_v1(ILogger logger) : this() { Log = logger; }
 
-        private ILogger log { get; set; }
+        private ILogger Log { get; set; }
 
 
         public async Task<IInternalResultObject<IJisCountry>> Country_GetOne_v1_Async(string Name, ILogger _logger = null)
@@ -32,12 +33,12 @@ namespace JsonInterfaceSerialize.DataServices
             if (!string.IsNullOrWhiteSpace(Name) && Name.Equals("throw_exception", StringComparison.InvariantCultureIgnoreCase))
             {
                 // throw new Exception("Simulating an unhandled exception");
-                string lsVar1 = null; lsVar1 = lsVar1.Trim();  // This generates a more realistic exception, with proper stack trace
+                string lsVar1 = null; _ = lsVar1.Trim();  // This generates a more realistic exception, with proper stack trace
             }
             // FINIS - SIMULATE AN UNHANDLED EXCEPTION
 
-            if (log is null && _logger is null) throw new NullReferenceException("No usable logger availaible");
-            if (_logger != null) log = _logger;
+            if (Log is null && _logger is null) throw new NullReferenceException("No usable logger availaible");
+            if (_logger != null) Log = _logger;
 
             IInternalResultObject<IJisCountry> IRO = new InternalResultObject<IJisCountry>
             {
@@ -47,7 +48,7 @@ namespace JsonInterfaceSerialize.DataServices
 
             try
             {
-                log.LogInformation("Get Country with Name = {0}", Name);    // Keep logger inside try-catch block, in case unusable logger is sent
+                Log.LogInformation("Get Country with Name = {0}", Name);    // Keep logger inside try-catch block, in case unusable logger is sent
                 // Sample object till a data source is implemented
                 if (Name.Equals("India", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -97,7 +98,8 @@ namespace JsonInterfaceSerialize.DataServices
             {
                 string lsErrData = ExceptionHelpers.SerializeExceptionTxt(se, $"Failed to get Country with Name = {Name}.");
                 IRO.Errors.Add(new Error { Type = ErrorTypes.ERROR, Message = lsErrData });
-                log.LogError(lsErrData);
+                Log.LogError(lsErrData);
+                if (se is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             }
             IRO.Result = loCountry;
             return IRO;

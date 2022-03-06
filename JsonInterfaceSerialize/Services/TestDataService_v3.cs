@@ -20,7 +20,7 @@ namespace JsonInterfaceSerialize.Services
             MaxDepth = 5,
         };
 
-        public static JisCountry SampleCountry_V3(string tag = null)
+        public static JisCountry SampleCountry_V3()
         {
             JisCountry loCountry = new JisCountry
             {
@@ -63,10 +63,12 @@ namespace JsonInterfaceSerialize.Services
             return loCountry;
         }
 
-        public static ResultObject<JisCountry> SampleContainer_v3(string tag = null)
+        public static ResultObject<JisCountry> SampleContainer_v3()
         {
-            ResultObject<JisCountry> RO = new ResultObject<JisCountry>(Guid.NewGuid().ToString());
-            RO.Data = SampleCountry_V3();
+            ResultObject<JisCountry> RO = new ResultObject<JisCountry>(Guid.NewGuid().ToString())
+            {
+                Data = SampleCountry_V3()
+            };
             // TODO: set other properties
             return RO;
         }

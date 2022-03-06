@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 
 namespace JsonInterfaceSerialize.Utilities.Helpers
@@ -10,16 +9,16 @@ namespace JsonInterfaceSerialize.Utilities.Helpers
     /// </summary>
     public class ExceptionHelpers
     {
-        #region Exception with deep stack trace
+        #region Generate exception with deep stack trace
         public static void GenerateErrorDeep() { GenerateError_l1(); }
         private static void GenerateError_l1() { GenerateError_l2(); }
         private static void GenerateError_l2() { GenerateError_l3(); }
         private static void GenerateError_l3() { GenerateError_l4(); }
         private static void GenerateError_l4()
         {
-            string lsVar1 = null; lsVar1 = lsVar1.Trim();
+            string lsVar1 = null; _ = lsVar1.Trim();
         }
-        #endregion Exception with deep stack trace
+        #endregion Generate exception with deep stack trace
 
         /// <summary>
         /// Extracts relevant information from an exception to a string, for logging and analysis.
@@ -36,31 +35,55 @@ namespace JsonInterfaceSerialize.Utilities.Helpers
                 if (string.IsNullOrWhiteSpace(note)) note = "No note given by caller.";
                 lsbErr.Append(string.Format("Note:    {0} | ", note));
                 lsbErr.Append(string.Format("Message: {0} | ", se.Message));
-                // lsbErr.Append(string.Format("HResult: {0} | ", se.HResult));
-                // lsbErr.Append(string.Format("Source:  {0} | ", se.Source));
+                lsbErr.Append(string.Format("HResult: {0} | ", se.HResult));
+                lsbErr.Append(string.Format("Source:  {0} | ", se.Source));
 
-                // TODO: Add InnerException to contents
-
-                if (string.IsNullOrWhiteSpace(se.StackTrace)) return lsbErr.ToString();
-
-                string[] lsStackEntries = se.StackTrace.Replace("\r", "").Split("\n");
-                int liPos = 0;
-
-                lsbErr.Append("StackTrace: | ");
-                for (int vI = 0; vI < lsStackEntries.Length; vI++)
+                if (!string.IsNullOrWhiteSpace(se.StackTrace))
                 {
-                    liPos = lsStackEntries[vI].IndexOf(" in ");
-                    if (liPos > 0)
-                        lsbErr.Append(
-                              "  "
-                            + lsStackEntries[vI]
-                                .Substring(liPos + 4)
-                                .Replace(":line", " at line")
-                            + " | "
-                        );
+                    string[] lsStackEntries = se.StackTrace.Replace("\r", "").Split("\n");
+                    int liPosTag = 0, liPosCut = 0;
+
+                    lsbErr.Append("StackTrace: | ");
+                    foreach (string ve in lsStackEntries)
+                    {
+                        liPosTag = ve.IndexOf(" in ");
+                        if (liPosTag >= 0) liPosCut = ve.IndexOf(se.Source, liPosTag);
+                        if (liPosTag >= liPosCut) liPosCut = liPosTag + 4; // if exception is from external library
+                        if (liPosTag >= 0)
+                            lsbErr.AppendFormat("  {0} | ", ve[liPosCut..].Replace(":line", " at line"));
+                    }
+                }
+                // if (!string.IsNullOrWhiteSpace(se.StackTrace)) lsbErr.Append(SerializeStackTrace(se.StackTrace, se.Source));
+
+                if (se.InnerException != null)
+                {
+                    lsbErr.Append("InnerException: BEGIN | ");
+                    lsbErr.Append(SerializeExceptionTxt(se.InnerException));
+                    lsbErr.Append("InnerException: FINIS | ");
                 }
             }
             catch (Exception ise) { lsbErr.AppendLine("Error parsing exception: " + ise.Message); }
+            return lsbErr.ToString();
+        }
+
+        private static string SerializeStackTrace(string strace, string source)
+        {
+            StringBuilder lsbErr = new StringBuilder();
+            try
+            {
+                string[] lsStackEntries = strace.Replace("\r", "").Split("\n");
+                int liPosTag = 0, liPosCut = 0;
+                lsbErr.Append("StackTrace: | ");
+                foreach (string ve in lsStackEntries)
+                {
+                    liPosTag = ve.IndexOf(" in ");
+                    if (liPosTag >= 0) liPosCut = ve.IndexOf(source, liPosTag);
+                    if (liPosTag >= liPosCut) liPosCut = liPosTag + 4; // if exception is from external library
+                    if (liPosTag >= 0)
+                        lsbErr.AppendFormat("  {0} | ", ve[liPosCut..].Replace(":line", " at line"));
+                }
+            }
+            catch (Exception ise) { lsbErr.AppendLine("Error parsing stack trace: " + ise.Message); }
             return lsbErr.ToString();
         }
 

@@ -19,7 +19,7 @@ namespace JsonInterfaceSerialize.Services
             MaxDepth = 5,
         };
 
-        public static JisCountry SampleCountry_V2(string tag = null)
+        public static JisCountry SampleCountry_V2()
         {
             JisCountry loCountry = new JisCountry
             {

@@ -20,7 +20,7 @@ namespace JsonInterfaceSerialize.Services
             MaxDepth = 5,
         };
 
-        public static IJisCountry SampleCountry_V4(string tag = null)
+        public static IJisCountry SampleCountry_V4()
         {
             IJisCountry loCountry = new JisCountry
             {
@@ -63,7 +63,7 @@ namespace JsonInterfaceSerialize.Services
             return loCountry;
         }
 
-        public static IResultObject<IJisCountry> SampleContainer_v4(string tag = null)
+        public static IResultObject<IJisCountry> SampleContainer_v4()
         {
             IResultObject<IJisCountry> RO = new ResultObject<IJisCountry>(Guid.NewGuid().ToString())
             {

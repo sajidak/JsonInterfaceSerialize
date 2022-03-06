@@ -19,7 +19,7 @@ namespace JsonInterfaceSerialize.DataModels.ModelsV4.Containers
     public class InternalResultObject<T> : IInternalResultObject<T>
     {
         public T Result { get; set; }
-        public int RecordsAffected { get; set; } = Gen.ROW_COUNT_ERROR;
+        public int RecordsAffected { get; set; } = Common.ROW_COUNT_ERROR;
         public IList<IError> Errors { get; set; } = new List<IError>();
         public bool HaveErrors { get => Errors.Where(e => e.Type == ErrorTypes.ERROR).Count() > 0; }
         public string Message { get; set; } = string.Empty;
@@ -60,7 +60,7 @@ namespace JsonInterfaceSerialize.DataModels.ModelsV4.Containers
             this.CorrelationId = CorrelationId;
         }
 
-        DateTimeOffset StartTime = DateTimeOffset.UtcNow;
+        readonly DateTimeOffset StartTime = DateTimeOffset.UtcNow;
 
         public string CorrelationId { get; set; }
 

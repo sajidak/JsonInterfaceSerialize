@@ -3,7 +3,8 @@ Proof of Concept to demonstrate serialization of Interface based objects to JSON
 
 ## Getting Started
 
-## Environment
+## Environment setup
+- Create local.settings.json
 
 ### local.settings.json
 JsonInterfaceSerialize\local.settings.json

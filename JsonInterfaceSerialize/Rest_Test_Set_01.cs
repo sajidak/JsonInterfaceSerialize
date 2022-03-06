@@ -1,20 +1,21 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Threading.Tasks;
+using JsonInterfaceSerialize.DataModels.Containers;
+using JsonInterfaceSerialize.DataModels.DataInterfaces;
+using JsonInterfaceSerialize.Services;
+using JsonInterfaceSerialize.Utilities.Enums;
+using JsonInterfaceSerialize.Utilities.Helpers;
+using JsonInterfaceSerialize.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
-using JsonInterfaceSerialize.DataModels.ModelsV4;
-using JsonInterfaceSerialize.DataModels.ModelsV4.Containers;
-using JsonInterfaceSerialize.Services;
-using JsonInterfaceSerialize.Utilities.Helpers;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace JsonInterfaceSerialize
 {
@@ -44,13 +45,14 @@ namespace JsonInterfaceSerialize
             ILogger log
             )
         {
+            log.LogInformation("Countries Router [{0}]", req.Method.ToUpperInvariant());
             switch (req.Method.ToLowerInvariant())
             {
                 case "get":
                     // extract the route fragment and pass it back.
-                    if (req.Query.ContainsKey("CountryName"))
-                        return await RestTest01_GetOne(req, log);
-                    else return await RestTest01_GetAll(req, log);
+                    bool y = req.Query.ContainsKey("CountryName");
+                    if (y) return await RestTest01_GetOne(req, log);
+                    else   return await RestTest01_GetAll(req, log);
                 case "post":
                     return await RestTest01_Create(req, log);
                 case "patch":
@@ -82,6 +84,8 @@ namespace JsonInterfaceSerialize
                 Successful = true,
                 Message = $"CountriesAll [{req.Method.ToUpper()}]"
             };
+            log.LogInformation(ARO.Message);
+            if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             return ARO;
         }
 
@@ -111,6 +115,27 @@ namespace JsonInterfaceSerialize
 
             try
             {
+
+                // Validation Section
+                using (ICountryValidator loCV = new CountryValidator(log))
+                {
+                    IValidatorResultObject<string> VRO;
+                    VRO = loCV.Countries_Validator_GetOne(req, log);
+                    liErrCount = ARO.IngestValidationErrors(VRO?.ValidationErrors);
+                    CountryName = VRO?.DataObject;
+                }
+                if (liErrCount > 0 || string.IsNullOrWhiteSpace(CountryName))
+                {
+                    ARO.StatusCode = HttpStatusCode.BadRequest;
+                    APIResponsePolisher.PolishGenericResponse(ref ARO, ref req, log);
+                    if (req.Query.ContainsKey("SyncStatus") && req.Query["SyncStatus"].ToString().ToLower() == "true")
+                    {
+                        req.HttpContext.Response.StatusCode = (int)ARO.StatusCode;
+                    }
+                    return ARO;
+                }
+
+                // Process Section
                 using (IIFTestSVC_v1 loCountryService = new IFTestSVC_v1(log))
                 {
                     IInternalResultObject<IJisCountry> IRO;
@@ -118,7 +143,13 @@ namespace JsonInterfaceSerialize
                     liErrCount = ARO.IngestErrors(IRO?.Errors); // Test for null IRO
                     ARO.Data = IRO?.Result;
                 }
-                ARO.StatusCode = (ARO.Data is null) ? HttpStatusCode.NoContent : HttpStatusCode.OK;
+
+                // Cleanup Section
+                if (liErrCount > 0) ARO.StatusCode = HttpStatusCode.InternalServerError;
+                else if (ARO.Data is null) ARO.StatusCode = HttpStatusCode.NoContent;
+                else ARO.StatusCode = HttpStatusCode.OK;
+                APIResponsePolisher.PolishGenericResponse(ref ARO, ref req, log);
+
             }
             catch (System.Exception se)
             {
@@ -128,29 +159,6 @@ namespace JsonInterfaceSerialize
                 log.LogError(lsErrData);
             }
 
-            // TODO: Abstract to a helper method - BEGIN
-
-            // Set Response properties
-            req.HttpContext.Response.ContentType = "application/json";
-
-            // Set container properties
-            ARO.Successful = false;
-            ARO.Message = ARO.StatusCode.ToString();
-            switch (ARO.StatusCode)
-            {
-                case HttpStatusCode.OK:
-                    ARO.Successful = true;
-                    break;
-                case HttpStatusCode.NoContent:
-                case HttpStatusCode.Unauthorized:
-                case HttpStatusCode.BadRequest:
-                case HttpStatusCode.InternalServerError:
-                    break;
-                default:
-                    ARO.Message = $"Unknown condition. Inform application owner with details.";
-                    break;
-            }
-            // TODO: Abstract to a helper method - FINIS
 
             // Root cause of HTTP 500 erors with no information in the container
             if (req.Query.ContainsKey("SyncStatus") && req.Query["SyncStatus"].ToString().ToLower() == "true")
@@ -183,6 +191,8 @@ namespace JsonInterfaceSerialize
                 Successful = true,
                 Message = $"CountriesAdd [{req.Method.ToUpper()}]"
             };
+            log.LogInformation(ARO.Message);
+            if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             return ARO;
         }
 
@@ -207,6 +217,8 @@ namespace JsonInterfaceSerialize
                 Successful = true,
                 Message = $"CountriesUpdate [{req.Method.ToUpper()}]"
             };
+            log.LogInformation(ARO.Message);
+            if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             return ARO;
         }
 
@@ -231,6 +243,8 @@ namespace JsonInterfaceSerialize
                 Successful = true,
                 Message = $"CountriesDelete [{req.Method.ToUpper()}]"
             };
+            log.LogInformation(ARO.Message);
+            if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             return ARO;
         }
 
@@ -256,12 +270,13 @@ namespace JsonInterfaceSerialize
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            name ??= data?.name;
 
             string responseMessage = string.IsNullOrEmpty(name)
                 ? "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response."
                 : $"Hello, {name}. This HTTP triggered function executed successfully.";
 
+            if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             return new OkObjectResult(responseMessage);
         }
     }

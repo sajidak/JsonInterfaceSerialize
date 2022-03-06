@@ -1,12 +1,11 @@
-﻿using JsonInterfaceSerialize.DataModels.ModelsV4;
+﻿using JsonInterfaceSerialize.DataModels.Containers;
+using JsonInterfaceSerialize.DataModels.DataInterfaces;
 using JsonInterfaceSerialize.DataServices;
+using JsonInterfaceSerialize.Utilities.Enums;
+using JsonInterfaceSerialize.Utilities.Helpers;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using JsonInterfaceSerialize.DataModels.ModelsV4.Containers;
 using System.Threading.Tasks;
-using JsonInterfaceSerialize.Utilities.Helpers;
 
 namespace JsonInterfaceSerialize.Services
 {
@@ -20,9 +19,9 @@ namespace JsonInterfaceSerialize.Services
         // TODO: Write proper logs
 
         public IFTestSVC_v1() { }
-        public IFTestSVC_v1(ILogger logger) : this() { log = logger; }
+        public IFTestSVC_v1(ILogger logger) : this() { Log = logger; }
 
-        private ILogger log { get; set; }
+        private ILogger Log { get; set; }
 
         public async Task<IInternalResultObject<IJisCountry>> Country_GetOne_v1_Async(string Name, ILogger _logger = null)
         {
@@ -35,8 +34,8 @@ namespace JsonInterfaceSerialize.Services
             }
             // BEGIN - RETURN A NULL CONTAINER
 
-            if (log is null && _logger is null) throw new NullReferenceException("No usable logger availaible");
-            if (_logger != null) log = _logger;
+            if (Log is null && _logger is null) throw new NullReferenceException("No usable logger availaible");
+            if (_logger != null) Log = _logger;
 
             IInternalResultObject<IJisCountry> IRO = new InternalResultObject<IJisCountry>
             {
@@ -46,12 +45,12 @@ namespace JsonInterfaceSerialize.Services
 
             try
             {
-                log.LogInformation("Get Country with Name = {0}", Name);    // Keep logger inside try-catch block, in case unusable logger is sent
+                Log.LogInformation("Get Country with Name = {0}", Name);    // Keep logger inside try-catch block, in case unusable logger is sent
 
-                using (IIFTestDS_v1 loCountryDataService = new IFTestDS_v1(log))
+                using (IIFTestDS_v1 loCountryDataService = new IFTestDS_v1(Log))
                 {
                     IInternalResultObject<IJisCountry> loDSResult;
-                    loDSResult = await loCountryDataService.Country_GetOne_v1_Async(Name, log);
+                    loDSResult = await loCountryDataService.Country_GetOne_v1_Async(Name, Log);
                     liErrCount = IRO.IngestErrors(loDSResult?.Errors);
                     IRO.Result = loDSResult?.Result;
                 }
@@ -68,7 +67,7 @@ namespace JsonInterfaceSerialize.Services
             {
                 string lsErrData = ExceptionHelpers.SerializeExceptionTxt(se, $"Failed to get Country with Name = {Name} from DataService.");
                 IRO.Errors.Add(new Error { Type = ErrorTypes.ERROR, Message = lsErrData });
-                log.LogError(lsErrData);
+                Log.LogError(lsErrData);
             }
             return IRO;
         }

@@ -17,7 +17,7 @@ namespace JsonInterfaceSerialize.DataModels.ModelsV3.Containers
             this.CorrelationId = CorrelationId;
         }
 
-        DateTimeOffset StartTime = DateTimeOffset.UtcNow;
+        readonly DateTimeOffset StartTime = DateTimeOffset.UtcNow;
 
         public string CorrelationId { get; set; }
 
