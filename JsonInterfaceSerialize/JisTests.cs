@@ -51,6 +51,7 @@ namespace JsonInterfaceSerialize
 
 
         [FunctionName("Test_One")]
+        [OpenApiIgnore]
         [OpenApiOperation(operationId: "Test_One", tags: new[] { "Tests - Manual" },
                                         Summary = "",
                                         Description = ""
@@ -71,6 +72,7 @@ namespace JsonInterfaceSerialize
         }
 
         [FunctionName("Test_Two")]
+        [OpenApiIgnore]
         [OpenApiOperation(operationId: "Test_Two", tags: new[] { "Tests - Manual" },
                                         Summary = "",
                                         Description = ""
@@ -91,6 +93,7 @@ namespace JsonInterfaceSerialize
         }
 
         [FunctionName("Test_Three")]
+        [OpenApiIgnore]
         [OpenApiOperation(operationId: "Test_Three", tags: new[] { "Tests - Manual" },
                                         Summary = "",
                                         Description = ""
@@ -111,6 +114,7 @@ namespace JsonInterfaceSerialize
         }
 
         [FunctionName("Test_Four")]
+        [OpenApiIgnore]
         [OpenApiOperation(operationId: "Test_Four", tags: new[] { "Tests - Manual" },
                                         Summary = "",
                                         Description = ""

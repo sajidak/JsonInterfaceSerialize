@@ -14,7 +14,7 @@ namespace JsonInterfaceSerialize
                 OpenApiInfo loOAI = base.Info;
                 loOAI.Version = "0.0.1.0";
                 loOAI.Title = "JIS - Json Interface Serialize Testbed";
-                loOAI.Description = "Put description of this API endpoint here. This should be as descriptive as possible.";
+                loOAI.Description = "Sample application to demonstrate usage of interface in Azure Function Apps with uUnit and  Moq + Moq.AutoMock.";
                 loOAI.Contact = new OpenApiContact() { Name = "sak", Email = "sak.fsap@outlook.com" };
                 return loOAI;
             }
