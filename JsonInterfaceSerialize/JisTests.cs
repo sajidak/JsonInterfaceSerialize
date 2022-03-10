@@ -9,8 +9,6 @@ using Newtonsoft.Json;
 using System.IO;
 using System.Net;
 using System.Threading.Tasks;
-using JsonInterfaceSerialize.Utilities;
-using JsonInterfaceSerialize.DataModels;
 using dm1 = JsonInterfaceSerialize.DataModels.ModelsV1;
 using dm2 = JsonInterfaceSerialize.DataModels.ModelsV2;
 using dm3 = JsonInterfaceSerialize.DataModels.ModelsV3;
@@ -24,6 +22,47 @@ namespace JsonInterfaceSerialize
 {
     public static class JisTests
     {
+
+        [FunctionName("Test_DynamicSQL")]
+        [OpenApiOperation(operationId: "Test_DynamicSQL", tags: new[] { "Tests - Manual" },
+                                        Summary = "",
+                                        Description = ""
+                                        )]
+        [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(IDynamicSqlIngredientsDM), Description = "The response container, with details of the processing outcome.")]
+        [OpenApiRequestBody("application/json", typeof(IFlexiQueryRequestDM))]
+        public static async Task<IDynamicSqlIngredientsDM> Test_DynamicSQL(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest req, ILogger log)
+        {
+            IFlexiQueryRequestDM reqBodyDM;
+            IDynamicSqlIngredientsDM DSI = new DynamicSqlIngredientsDM();
+            try
+            {
+                log.LogInformation("BEGIN Test_DynamicSQL [{0}]", req.Path);
+
+                string reqBodyText = await new StreamReader(req.Body).ReadToEndAsync();
+
+                // Test all methods
+                // reqBody = FlexiQueryRequestDM.FromJson_v2(requestBody);
+                // reqBody = FlexiQueryRequestDM.FromJson_v1(requestBody);
+                reqBodyDM = JsonHelpers.FromJson<IFlexiQueryRequestDM>(reqBodyText);
+
+                DynamicSqlSVC dsql = new DynamicSqlSVC(log);
+                //DSI = dsql.PrepareDynamicCommand(reqBodyDM, "NEW_REG", TableDefs.TableDef_NewReg, log);
+                DSI = dsql.PrepareDynamicCommand(reqBodyDM, "user", TableDefs.TableDef_Users, log);
+
+                log.LogInformation("FINIS Test_DynamicSQL [{0}]", req.Path);
+            }
+            catch (System.Exception se)
+            {
+                string lsExceptionData = ExceptionHelpers.SerializeExceptionTxt(se, "Dynamic SQL generator.");
+                log.LogError(lsExceptionData);
+                DSI.Comments = lsExceptionData;
+                if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
+            }
+            return DSI;
+        }
+
+
         [FunctionName("Test_EP")]
         [OpenApiOperation(operationId: "Test_EP", tags: new[] { "Tests - Manual" },
                                         Summary = "",
@@ -44,8 +83,8 @@ namespace JsonInterfaceSerialize
             {
                 lsExceptionData = ExceptionHelpers.SerializeExceptionTxt(se, "Trail for exception serialization.");
                 log.LogError(lsExceptionData);
+                if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             }
-            if (log is null) await Task.Delay(0); // Dummy entry to bypass code analysis warning CS1998.
             return lsExceptionData;
         }
 

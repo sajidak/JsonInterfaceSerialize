@@ -33,3 +33,21 @@ System.Diagnostics.TraceSource.4.3.0
 System.Xml.XmlDocument.4.3.0
 
 ***
+JsonInterfaceSerialize
+
+Updates:
+
+Microsoft.NETCore.Platforms.2.1.2 -> Microsoft.NETCore.Platforms.3.1.0
+
+Installing:
+
+Microsoft.Win32.Registry.4.7.0
+runtime.native.System.Data.SqlClient.sni.4.7.0
+runtime.win-arm64.runtime.native.System.Data.SqlClient.sni.4.4.0
+runtime.win-x64.runtime.native.System.Data.SqlClient.sni.4.4.0
+runtime.win-x86.runtime.native.System.Data.SqlClient.sni.4.4.0
+System.Data.SqlClient.4.8.3
+System.Security.AccessControl.4.7.0
+System.Security.Principal.Windows.4.7.0
+
+***
