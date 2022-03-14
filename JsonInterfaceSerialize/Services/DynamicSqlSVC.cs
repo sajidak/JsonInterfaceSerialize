@@ -22,6 +22,17 @@ namespace JsonInterfaceSerialize.Services
         EQUALS = 0,
         LIKE = 1,
         IN = 2,
+
+        // TBD
+        IS_NULL = 3,
+        GREATER_THAN = 4,
+        LESS_THAN = 5,
+        NOT_EQUALS = 20,
+        NOT_LIKE = 21,
+        NOT_IN = 22,
+        IS_NOT_NULL = 23,
+
+        BETWEEN = 50,   // Not sure if this can be done with structure change
     }
 
     public class TableDefs
