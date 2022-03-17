@@ -42,7 +42,16 @@ JsonInterfaceSerialize\local.settings.json
     - https://www.nuget.org/packages/System.Threading.Tasks.Extensions/4.5.3
 
 
-    
+***
+
+## Other features
+> Other features that are bundled
+
+### Dynamic SQL generation
+
+### Exception Serializer
+
+
 ***
 
 ## Links of Interest
